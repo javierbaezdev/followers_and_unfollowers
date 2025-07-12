@@ -8,7 +8,7 @@ const YOUR_PASSWORD = CONFIG.INTAGRAM_PASSWORD; // <-- tu contraseña de Instagr
 const INSTAGRAM_URL = 'https://www.instagram.com';
 const PROFILE_URL = `${INSTAGRAM_URL}/${USERNAME}/`;
 const OUT_PUT_FILE_NAME = CONFIG.FOLLOWED_OUT_PUT_FILE_NAME;
-const SHOW_BROWSER = true;
+const SHOW_BROWSER = false;
 
 (async () => {
   const browser = await puppeteer.launch({

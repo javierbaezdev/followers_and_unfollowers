@@ -14,6 +14,8 @@ const TIME_OUT_POST_CLICK_FOLLOWING_BUTOON = 1500;
 const TIME_OUT_POST_SEARCH_MY_NICKNAME_IN_BAR = 1500;
 const TIME_OUT_POST_ADD_IN_ARRAY_NO_TE_SIGUEN = 500;
 
+const SHOW_BROWSER = false;
+
 (async () => {
   const seguidos = JSON.parse(fs.readFileSync(JSON_FILE_NAME, 'utf-8'));
   const evaluados = seguidos.slice(0, EVALUATE_ACCOUNT_NUMBER);
@@ -22,7 +24,7 @@ const TIME_OUT_POST_ADD_IN_ARRAY_NO_TE_SIGUEN = 500;
   const noTeSiguen = [];
 
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: !SHOW_BROWSER,
     defaultViewport: null,
     args: ['--start-maximized'],
   });

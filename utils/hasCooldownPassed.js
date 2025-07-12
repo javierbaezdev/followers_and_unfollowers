@@ -1,10 +1,12 @@
 import fs from 'fs';
 import { CONFIG } from '../constans/index.js';
 
-export const hasCooldownPassed = (hours = CONFIG.TIME_OUT_EXECUTE_SCRIPT) => {
-  if (!fs.existsSync(CONFIG.LAST_RUN_FILE)) return true;
+const FILE_NAME = `${CONFIG.LAST_RUN_FILE}_${CONFIG.INTAGRAM_USERNAME}.json`;
 
-  const data = JSON.parse(fs.readFileSync(CONFIG.LAST_RUN_FILE, 'utf-8'));
+export const hasCooldownPassed = (hours = CONFIG.TIME_OUT_EXECUTE_SCRIPT) => {
+  if (!fs.existsSync(FILE_NAME)) return true;
+
+  const data = JSON.parse(fs.readFileSync(FILE_NAME, 'utf-8'));
   const lastRun = new Date(data.lastRun);
   const now = new Date();
   const diffHours = (now - lastRun) / (1000 * 60 * 60);
@@ -23,10 +25,10 @@ export const hasCooldownPassed = (hours = CONFIG.TIME_OUT_EXECUTE_SCRIPT) => {
 
 export const saveLastRunTime = () => {
   fs.writeFileSync(
-    CONFIG.LAST_RUN_FILE,
+    FILE_NAME,
     JSON.stringify({ lastRun: new Date().toISOString() }, null, 2)
   );
   console.log(
-    `🕒 Script finalizado. Fecha de ejecución guardada en ${CONFIG.LAST_RUN_FILE}`
+    `🕒 Script finalizado. Fecha de ejecución guardada en ${FILE_NAME}`
   );
 };

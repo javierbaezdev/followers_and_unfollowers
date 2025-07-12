@@ -1,7 +1,7 @@
 export const loginInstagram = async (page, username, password) => {
   console.log('🔐 Iniciando sesión con usuario y contraseña...');
 
-  await page.goto('https://www.instagram.com/accounts/login/', {
+  await page.goto('https://www.instagram.com/', {
     waitUntil: 'networkidle2',
   });
   await page.waitForSelector('input[name="username"]', { timeout: 10000 });

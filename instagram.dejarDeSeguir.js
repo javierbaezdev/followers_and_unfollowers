@@ -15,7 +15,7 @@ const PASSWORD = CONFIG.INTAGRAM_PASSWORD;
 const JSON_FILE_NAME = CONFIG.DONT_FOLLOW_ME_OUT_PUT_FILE_NAME;
 const UNFOLLOW_ACCOUNT_MAX_NUMBER = CONFIG.UNFOLLOW_ACCOUNT_MAX_NUMBER;
 
-const SHOW_BROWSER = true;
+const SHOW_BROWSER = false;
 
 (async () => {
   if (!hasCooldownPassed()) process.exit(1);
