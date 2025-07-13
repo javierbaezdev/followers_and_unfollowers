@@ -44,11 +44,9 @@ followers_and_unfollowers/
 Crea un archivo `.env` en la raíz con lo siguiente:
 
 ```env
-MONGO_URI=mongodb+srv://<usuario>:<contraseña>@cluster.mongodb.net/followers_and_unfollowers
+MONGO_URI=mongodb+srv://<usuario>:<contraseña>@cluster.mongodb.net/el-nombre-que-te-de-la-gana
 INTAGRAM_USERNAME=tucuenta
 INTAGRAM_PASSWORD=tuclave
-TIME_OUT_EXECUTE_SCRIPT=2
-UNFOLLOW_ACCOUNT_MAX_NUMBER=10
 ```
 
 ---
