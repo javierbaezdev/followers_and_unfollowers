@@ -38,6 +38,13 @@ function menu() {
             : 'Debe ser un número mayor a cero';
         },
       },
+      {
+        type: 'confirm',
+        name: 'skipcooldown',
+        message: '¿Quieres saltarte el cooldown?',
+        when: (res) => res.accion === 'dejar',
+        default: false,
+      },
     ])
     .then((res) => {
       switch (res.accion) {
@@ -51,7 +58,10 @@ function menu() {
           ]);
           break;
         case 'dejar':
-          ejecutarScript('instagram.unfollow.js');
+          ejecutarScript('instagram.unfollow.js', [
+            '--skipcooldown',
+            res.skipcooldown,
+          ]);
           break;
         case 'checkDb':
           ejecutarScript('checkDb.js', ['checkDb']);

@@ -4,6 +4,7 @@ import { CONFIG } from './constans/index.js';
 import {
   deleteFollowedAccount,
   getFollowedAccounts,
+  getIgnoredAccounts,
   saveUnfollowedAccount,
 } from './services/index.js';
 import connectDB from './db/index.js';
@@ -38,6 +39,10 @@ if (index !== -1 && args[index + 1]) {
     platform: 'instagram',
     limit: EVALUATE_ACCOUNT_NUMBER,
   });
+  const ignoredList = await getIgnoredAccounts({
+    ownerUsername: YOUR_USERNAME,
+    platform: 'instagram',
+  });
 
   if (!accounts.length) {
     console.log('⚠️ No se encontraron cuentas seguidas.');
@@ -61,6 +66,10 @@ if (index !== -1 && args[index + 1]) {
   for (const [index, account] of accounts.entries()) {
     const { followedUsername: user } = account;
     try {
+      const isIgnored = ignoredList.find(
+        (ignored) => ignored.ignoredUsername === user
+      );
+
       const profileUrl = `https://www.instagram.com/${user}/`;
 
       console.log(`🔎 (${index + 1}/${accounts.length}) Revisando ${user}...`);
@@ -76,11 +85,14 @@ if (index !== -1 && args[index + 1]) {
         console.log(
           `⚠️ No se encontró botón de 'seguidos' en ${user}, registrando en base de datos`
         );
+
         await saveUnfollowedAccount({
           unfollowerUsername: user,
           ownerUsername: YOUR_USERNAME,
           platform: 'instagram',
+          ignored: !!isIgnored,
         });
+
         unfollowerUser.push(user);
         continue;
       }
@@ -123,6 +135,7 @@ if (index !== -1 && args[index + 1]) {
           unfollowerUsername: user,
           ownerUsername: YOUR_USERNAME,
           platform: 'instagram',
+          ignored: !!isIgnored,
         });
         console.log(`❌ ${user} NO te sigue, registrando en base de datos`);
       } else {

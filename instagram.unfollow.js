@@ -16,10 +16,20 @@ const UNFOLLOW_ACCOUNT_MAX_NUMBER = CONFIG.UNFOLLOW_ACCOUNT_MAX_NUMBER;
 
 const SHOW_BROWSER = false;
 
+const args = process.argv.slice(2);
+const shouldSkipCooldown =
+  args.includes('--skipCooldown') &&
+  args[args.indexOf('--skipCooldown') + 1] === 'true';
+
 (async () => {
   await connectDB(false);
-  if (!(await hasCooldownPassed('instagram.unfollow', USERNAME, 'instagram'))) {
-    process.exit(1);
+
+  if (shouldSkipCooldown) {
+    if (
+      !(await hasCooldownPassed('instagram.unfollow', USERNAME, 'instagram'))
+    ) {
+      process.exit(1);
+    }
   }
 
   const users = await getUnfollowedAccounts({

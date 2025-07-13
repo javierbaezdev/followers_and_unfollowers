@@ -8,3 +8,4 @@ export { default as deleteUnfollowedAccount } from './deleteUnfollowedAccount.js
 export { default as getFollowedAccounts } from './getFollowedAccounts.js';
 export { default as getUnfollowedAccounts } from './getUnfollowedAccounts.js';
 export { default as getScriptExecutionLog } from './getScriptExecutionLog.js';
+export { default as getIgnoredAccounts } from './getIgnoredAccounts.js';
