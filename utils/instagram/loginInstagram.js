@@ -31,5 +31,5 @@ export const loginInstagram = async (page, username, password) => {
     // No hay popup, todo bien
   }
 
-  console.log('✅ Sesión iniciada correctamente.\n');
+  console.log(`✅ Sesión iniciada correctamente con ${username} 👍`);
 };

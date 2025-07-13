@@ -1,21 +1,51 @@
-import fs from 'fs';
+import { DateTime } from 'luxon';
+import getChileDate from './getChileDate.js';
+
+import {
+  getScriptExecutionLog,
+  registerScriptExecution,
+} from '../services/index.js'; // <-- import services
+
 import { CONFIG } from '../constans/index.js';
 
-const FILE_NAME = `${CONFIG.LAST_RUN_FILE}_${CONFIG.INTAGRAM_USERNAME}.json`;
+/**
+ * Verifica si han pasado suficientes horas desde la última ejecución del script.
+ * @param {string} scriptName - Nombre del script
+ * @param {string} ownerUsername - Tu usuario
+ * @param {string} platform - Plataforma (ej: instagram)
+ * @param {number} hours - Cuántas horas deben pasar (default: desde CONFIG)
+ * @returns {Promise<boolean>} true si se puede ejecutar, false si hay que esperar
+ */
+export const hasCooldownPassed = async (
+  scriptName,
+  ownerUsername,
+  platform,
+  hours = CONFIG.TIME_OUT_EXECUTE_SCRIPT
+) => {
+  const record = await getScriptExecutionLog(
+    scriptName,
+    ownerUsername,
+    platform
+  );
 
-export const hasCooldownPassed = (hours = CONFIG.TIME_OUT_EXECUTE_SCRIPT) => {
-  if (!fs.existsSync(FILE_NAME)) return true;
+  if (!record?.executedAt) return true;
 
-  const data = JSON.parse(fs.readFileSync(FILE_NAME, 'utf-8'));
-  const lastRun = new Date(data.lastRun);
-  const now = new Date();
-  const diffHours = (now - lastRun) / (1000 * 60 * 60);
+  const lastExecution = DateTime.fromJSDate(record.executedAt).setZone(
+    'America/Santiago'
+  );
+  const ahora = DateTime.fromJSDate(getChileDate()).setZone('America/Santiago');
 
-  if (diffHours < hours) {
-    const nextRun = new Date(lastRun.getTime() + hours * 60 * 60 * 1000);
-    const minutesLeft = Math.ceil((nextRun - now) / (1000 * 60));
+  const diff = ahora.diff(lastExecution, 'hours').hours;
+
+  if (diff < hours) {
+    const siguiente = lastExecution.plus({ hours });
+    const minutosRestantes = Math.ceil(
+      siguiente.diff(ahora, 'minutes').minutes
+    );
+
+    console.log(`⏳ Debes esperar al menos ${hours}h entre ejecuciones.`);
     console.log(
-      `⏳ Debes esperar al menos ${hours} horas entre ejecuciones.\n🕒 Podrás volver a ejecutar este script en ${minutesLeft} minutos.`
+      `🕒 Próxima ejecución posible en ${minutosRestantes} minutos (a las ${siguiente.toFormat('HH:mm:ss')})`
     );
     return false;
   }
@@ -23,12 +53,15 @@ export const hasCooldownPassed = (hours = CONFIG.TIME_OUT_EXECUTE_SCRIPT) => {
   return true;
 };
 
-export const saveLastRunTime = () => {
-  fs.writeFileSync(
-    FILE_NAME,
-    JSON.stringify({ lastRun: new Date().toISOString() }, null, 2)
-  );
+/**
+ * Guarda en base de datos la fecha de última ejecución del script.
+ * @param {string} scriptName
+ * @param {string} ownerUsername
+ * @param {string} platform
+ */
+export const saveLastRunTime = async (scriptName, ownerUsername, platform) => {
+  await registerScriptExecution(scriptName, ownerUsername, platform);
   console.log(
-    `🕒 Script finalizado. Fecha de ejecución guardada en ${FILE_NAME}`
+    `🕒 Script finalizado. Fecha de ejecución registrada en base de datos.`
   );
 };

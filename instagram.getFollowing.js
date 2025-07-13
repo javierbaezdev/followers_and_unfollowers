@@ -1,16 +1,19 @@
 import puppeteer from 'puppeteer';
-import fs from 'fs';
 import { loginInstagram } from './utils/instagram/loginInstagram.js';
 import { CONFIG } from './constans/index.js';
+import { saveFollowedAccountsBulk } from './services/index.js';
+import { saveLastRunTime } from './utils/index.js';
+import connectDB from './db/index.js';
 
 const USERNAME = CONFIG.INTAGRAM_USERNAME; // <-- tu usuario de Instagram
 const YOUR_PASSWORD = CONFIG.INTAGRAM_PASSWORD; // <-- tu contraseña de Instagram
 const INSTAGRAM_URL = 'https://www.instagram.com';
 const PROFILE_URL = `${INSTAGRAM_URL}/${USERNAME}/`;
-const OUT_PUT_FILE_NAME = CONFIG.FOLLOWED_OUT_PUT_FILE_NAME;
+
 const SHOW_BROWSER = false;
 
 (async () => {
+  await connectDB(false);
   const browser = await puppeteer.launch({
     headless: !SHOW_BROWSER, // mostrar navegador
     defaultViewport: null,
@@ -105,11 +108,26 @@ const SHOW_BROWSER = false;
   // obtener nombres de usuario
   const followingHandles = await scrollFollowingModal();
 
-  console.log(`Total: ${followingHandles.length}`);
-  fs.writeFileSync(
-    OUT_PUT_FILE_NAME,
-    JSON.stringify(followingHandles, null, 2)
+  if (!followingHandles.length) {
+    console.log('⚠️ No se encontraron seguidores.');
+    await browser.close();
+    return;
+  }
+
+  const formatedFollowingHandles = followingHandles.map((h) => ({
+    followedUsername: h,
+    ownerUsername: USERNAME,
+    platform: 'instagram',
+  }));
+
+  await saveFollowedAccountsBulk(formatedFollowingHandles);
+
+  await saveLastRunTime('instagram.getFollowing', USERNAME, 'instagram');
+
+  console.log(
+    `Total: ${followingHandles.length} agregados a la base de datos.`
   );
 
   await browser.close();
+  process.exit(0);
 })();

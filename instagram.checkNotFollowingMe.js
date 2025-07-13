@@ -1,13 +1,16 @@
 import puppeteer from 'puppeteer';
-import fs from 'fs';
 import { loginInstagram } from './utils/instagram/loginInstagram.js';
 import { CONFIG } from './constans/index.js';
+import {
+  deleteFollowedAccount,
+  getFollowedAccounts,
+  saveUnfollowedAccount,
+} from './services/index.js';
+import connectDB from './db/index.js';
+import { saveLastRunTime } from './utils/index.js';
 
 const YOUR_USERNAME = CONFIG.INTAGRAM_USERNAME; // <-- tu usuario de Instagram
 const YOUR_PASSWORD = CONFIG.INTAGRAM_PASSWORD; // <-- tu contraseña de Instagram
-const JSON_FILE_NAME = CONFIG.FOLLOWED_OUT_PUT_FILE_NAME; // <-- nombre del archivo de seguidos
-const OUT_PUT_FILE_NAME = CONFIG.DONT_FOLLOW_ME_OUT_PUT_FILE_NAME; // <-- nombre del archivo de no me siguen
-const EVALUATE_ACCOUNT_NUMBER = CONFIG.EVALUATE_ACCOUNT_NUMBER; // <-- cuantos usuarios evaluar
 
 const TOME_OUT_POST_GO_TO_PROFILE_USER = 1500;
 const TIME_OUT_POST_CLICK_FOLLOWING_BUTOON = 1500;
@@ -16,12 +19,32 @@ const TIME_OUT_POST_ADD_IN_ARRAY_NO_TE_SIGUEN = 500;
 
 const SHOW_BROWSER = false;
 
-(async () => {
-  const seguidos = JSON.parse(fs.readFileSync(JSON_FILE_NAME, 'utf-8'));
-  const evaluados = seguidos.slice(0, EVALUATE_ACCOUNT_NUMBER);
-  const restantes = seguidos.slice(EVALUATE_ACCOUNT_NUMBER);
+// 👉 Captura el argumento desde consola
+const args = process.argv.slice(2);
+let EVALUATE_ACCOUNT_NUMBER = CONFIG.EVALUATE_ACCOUNT_NUMBER; // <-- cuantos usuarios evaluar
 
-  const noTeSiguen = [];
+const index = args.indexOf('--accountNumber');
+if (index !== -1 && args[index + 1]) {
+  const parsed = parseInt(args[index + 1], 10);
+  if (!isNaN(parsed)) {
+    EVALUATE_ACCOUNT_NUMBER = parsed;
+  }
+}
+
+(async () => {
+  await connectDB(false);
+  const accounts = await getFollowedAccounts({
+    ownerUsername: YOUR_USERNAME,
+    platform: 'instagram',
+    limit: EVALUATE_ACCOUNT_NUMBER,
+  });
+
+  if (!accounts.length) {
+    console.log('⚠️ No se encontraron cuentas seguidas.');
+    return;
+  }
+
+  const unfollowerUser = [];
 
   const browser = await puppeteer.launch({
     headless: !SHOW_BROWSER,
@@ -35,12 +58,13 @@ const SHOW_BROWSER = false;
 
   await loginInstagram(page, YOUR_USERNAME, YOUR_PASSWORD);
 
-  for (const [index, user] of evaluados.entries()) {
+  for (const [index, account] of accounts.entries()) {
+    const { followedUsername: user } = account;
     try {
       const profileUrl = `https://www.instagram.com/${user}/`;
-      console.log(
-        `🔎 (${index + 1}/${evaluados.length}/${seguidos.length}) Revisando ${user}...`
-      );
+
+      console.log(`🔎 (${index + 1}/${accounts.length}) Revisando ${user}...`);
+
       await page.goto(profileUrl, { waitUntil: 'networkidle2' });
 
       await new Promise((resolve) =>
@@ -49,8 +73,15 @@ const SHOW_BROWSER = false;
 
       const followingBtn = await page.$('a[href$="/following/"]');
       if (!followingBtn) {
-        console.log(`⚠️ No se encontró botón de 'seguidos' en ${user}`);
-        noTeSiguen.push(user);
+        console.log(
+          `⚠️ No se encontró botón de 'seguidos' en ${user}, registrando en base de datos`
+        );
+        await saveUnfollowedAccount({
+          unfollowerUsername: user,
+          ownerUsername: YOUR_USERNAME,
+          platform: 'instagram',
+        });
+        unfollowerUser.push(user);
         continue;
       }
 
@@ -83,13 +114,25 @@ const SHOW_BROWSER = false;
       );
 
       const teSigue = result.includes(YOUR_USERNAME);
-
+      console.log(
+        '======================================================================'
+      );
       if (!teSigue) {
-        noTeSiguen.push(user);
-        console.log(`❌ ${user} NO te sigue`);
+        unfollowerUser.push(user);
+        await saveUnfollowedAccount({
+          unfollowerUsername: user,
+          ownerUsername: YOUR_USERNAME,
+          platform: 'instagram',
+        });
+        console.log(`❌ ${user} NO te sigue, registrando en base de datos`);
       } else {
         console.log(`✅ ${user} SÍ te sigue`);
       }
+
+      await deleteFollowedAccount(user, YOUR_USERNAME, 'instagram');
+      console.log(
+        '======================================================================'
+      );
 
       await page.keyboard.press('Escape');
       await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -102,18 +145,16 @@ const SHOW_BROWSER = false;
     );
   }
 
-  fs.writeFileSync(OUT_PUT_FILE_NAME, JSON.stringify(noTeSiguen, null, 2));
-
-  // Actualizar el JSON original quitando los evaluados
-  fs.writeFileSync(JSON_FILE_NAME, JSON.stringify(restantes, null, 2));
-
-  console.log(
-    `\n📝 Guardado como no_me_siguen.json (${noTeSiguen.length} personas no te siguen)`
+  await saveLastRunTime(
+    'instagram.checkNotFollowingMe',
+    YOUR_USERNAME,
+    'instagram'
   );
 
   console.log(
-    `📝 Actualizado archivo ${JSON_FILE_NAME} con ${restantes.length} cuentas restantes.`
+    `\n📝 Total de cuentas que se registraron en base de datos: (${unfollowerUser.length}!)`
   );
 
   await browser.close();
+  process.exit(0);
 })();

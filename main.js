@@ -3,6 +3,7 @@ import { spawn } from 'child_process';
 
 function menu() {
   console.clear();
+
   inquirer
     .prompt([
       {
@@ -15,12 +16,27 @@ function menu() {
             name: '👀 Ver quién no te sigue (checkNoMeSiguen)',
             value: 'check',
           },
+          { name: '👋 Dejar de seguir (dejarDeSeguir)', value: 'dejar' },
           {
-            name: '👋 Dejar de seguir (dejarDeSeguir)',
-            value: 'dejar',
+            name: '⚙️ Comprobar si la conexión a MongoDB está funcionando',
+            value: 'checkDb',
           },
           { name: '❌ Salir', value: 'exit' },
         ],
+      },
+
+      {
+        type: 'input',
+        name: 'accountNumber',
+        message: '🔢 ¿Cuántas cuentas querés evaluar?',
+        when: (res) => res.accion === 'check',
+        validate: (val) => {
+          if (val.trim() === '') return true; // permite ENTER vacío (será undefined)
+          const parsed = parseInt(val);
+          return !isNaN(parsed) && parsed > 0
+            ? true
+            : 'Debe ser un número mayor a cero';
+        },
       },
     ])
     .then((res) => {
@@ -29,23 +45,28 @@ function menu() {
           ejecutarScript('instagram.getFollowing.js');
           break;
         case 'check':
-          ejecutarScript('instagram.checkNoMeSiguen.js');
+          ejecutarScript('instagram.checkNotFollowingMe.js', [
+            '--accountNumber',
+            res.accountNumber,
+          ]);
           break;
         case 'dejar':
-          ejecutarScript('instagram.dejarDeSeguir.js');
+          ejecutarScript('instagram.unfollow.js');
+          break;
+        case 'checkDb':
+          ejecutarScript('checkDb.js', ['checkDb']);
           break;
         case 'exit':
           console.log('\n👋 Cerrando aplicación.\n');
-
           process.exit(0);
       }
     });
 }
 
-function ejecutarScript(script) {
+function ejecutarScript(script, args = []) {
   console.log(`\n🚀 Ejecutando ${script}...\n`);
 
-  const proceso = spawn('node', [script], {
+  const proceso = spawn('node', [script, ...args], {
     stdio: 'inherit', // Esto permite mostrar los logs en tiempo real
     shell: true,
   });
