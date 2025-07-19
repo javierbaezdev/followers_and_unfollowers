@@ -93,6 +93,8 @@ if (index !== -1 && args[index + 1]) {
           ignored: !!isIgnored,
         });
 
+        await deleteFollowedAccount(user, YOUR_USERNAME, 'instagram');
+
         unfollowerUser.push(user);
         continue;
       }

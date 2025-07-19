@@ -21,6 +21,10 @@ function menu() {
             name: '⚙️ Comprobar si la conexión a MongoDB está funcionando',
             value: 'checkDb',
           },
+          {
+            name: '🧐 Comprobar estadísticas de seguidores y no seguidores',
+            value: 'checkStats',
+          },
           { name: '❌ Salir', value: 'exit' },
         ],
       },
@@ -65,6 +69,10 @@ function menu() {
           break;
         case 'checkDb':
           ejecutarScript('checkDb.js', ['checkDb']);
+          break;
+
+        case 'checkStats':
+          ejecutarScript('showStatsByUser.js');
           break;
         case 'exit':
           console.log('\n👋 Cerrando aplicación.\n');
